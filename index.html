@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasta Translator (HTML)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom spinner for processing */
+        .spinner {
+            border-top-color: #4f46e5;
+            -webkit-animation: spin 1s ease-in-out infinite;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { -webkit-transform: rotate(360deg); }
+        }
+        @-webkit-keyframes spin {
+            to { -webkit-transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 sm:p-8 flex items-center justify-center">
+
+    <div id="app-container" class="w-full max-w-4xl bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-6 sm:p-10">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-center mb-2 text-indigo-600 dark:text-indigo-400">
+            Dasta Translator (Rule-Based)
+        </h1>
+        <p id="direction-label" class="text-center text-gray-500 dark:text-gray-400 mb-8 text-lg">
+            English <span class="font-semibold text-indigo-500">⇌</span> Dasta
+        </p>
+
+        <div id="error-message-container"></div>
+
+        <!-- Translation Area -->
+        <div class="grid grid-cols-1 lg:col-span-2 gap-6">
+            
+            <!-- Input Panel -->
+            <div class="flex flex-col">
+                <label id="input-label" for="input-text" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.02 18.02 0 014 16h3M7 11V7m4 2h2m-2 4h2m4 4h2m-6 3l-3-3m0 0l3-3m-3 3h4m1 0h3m-3 0V9m0 6h4"></path></svg>
+                    Source Language: <strong>English</strong>
+                </label>
+                <textarea
+                    id="input-text"
+                    rows="8"
+                    placeholder='Enter English text here to translate it into Dasta.'
+                    class="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition duration-150 ease-in-out resize-none shadow-inner"
+                ></textarea>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="flex flex-col">
+                <label id="output-label" for="output-container" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.02 18.02 0 014 16h3M7 11V7m4 2h2m-2 4h2m4 4h2m-6 3l-3-3m0 0l3-3m-3 3h4m1 0h3m-3 0V9m0 6h4"></path></svg>
+                    Target Language: <strong>Dasta</strong>
+                </label>
+                <div
+                    id="output-container"
+                    class="w-full p-4 h-full border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white transition duration-150 ease-in-out shadow-inner text-gray-800 min-h-[14rem] overflow-auto"
+                >
+                    Your translation will appear here.
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+            
+            <button
+                id="swap-button"
+                class="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out shadow-lg hover:shadow-xl w-full sm:w-auto"
+            >
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 12m15.356 2h.582M4 12v5m.582-5a8.001 8.001 0 0015.356 0h.582M4 12h.001"></path></svg>
+                Swap Direction
+            </button>
+
+            <button
+                id="translate-button"
+                class="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-white bg-green-500 hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-300 ease-in-out shadow-lg hover:shadow-xl w-full sm:w-auto disabled:opacity-50"
+            >
+                <svg id="send-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <div id="processing-spinner" class="hidden spinner rounded-full w-5 h-5 border-4 border-t-4 border-gray-200 mr-2"></div>
+                <span id="translate-text">Translate</span>
+            </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        // --- State and Constants ---
+        const LANGUAGES = { EN: 'English', DASTA: 'Dasta' };
+        let direction = 'en_to_dasta'; // 'en_to_dasta' or 'dasta_to_en'
+        let isProcessing = false;
+
+        // --- DOM Element References ---
+        const inputTextArea = document.getElementById('input-text');
+        const outputContainer = document.getElementById('output-container');
+        const swapButton = document.getElementById('swap-button');
+        const translateButton = document.getElementById('translate-button');
+        const inputLabel = document.getElementById('input-label');
+        const outputLabel = document.getElementById('output-label');
+        const directionLabel = document.getElementById('direction-label');
+        const errorContainer = document.getElementById('error-message-container');
+        const sendIcon = document.getElementById('send-icon');
+        const processingSpinner = document.getElementById('processing-spinner');
+        const translateText = document.getElementById('translate-text');
+
+        // --- API Constants and Utilities for Dasta -> English Translation ---
+        const API_MODEL = 'gemini-2.5-flash-preview-09-2025';
+
+        // =========================================================================================
+        // IMPORTANT: If you are running this code on an external site (like GitHub Pages), 
+        // you MUST replace the empty string below with your personal Gemini API key.
+        // Get your key from Google AI Studio.
+        // =========================================================================================
+        const apiKey = "AIzaSyBWWKC0IDRsyDFF2S9a9yVWkGeMekT8f_o"; // <--- PASTE YOUR API KEY HERE FOR EXTERNAL HOSTING
+        // =========================================================================================
+
+        /**
+         * Executes a fetch request with exponential backoff retry logic.
+         */
+        async function retryFetch(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    }
+                    if (response.status === 429 && i < maxRetries - 1) {
+                        // Too Many Requests, calculate backoff time
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    // Capture the status for better error reporting outside this loop
+                    const status = response.status;
+                    const statusText = response.statusText;
+                    throw new Error(`API request failed with status ${status}: ${statusText}`);
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        throw new Error(`Fetch failed after ${maxRetries} attempts: ${error.message}`);
+                    }
+                    const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("Exhausted all retry attempts.");
+        }
+
+        /**
+         * Calls the Gemini API to perform the Dasta -> English translation.
+         */
+        const callGeminiApi = async (query) => {
+            if (apiKey === "") {
+                throw new Error("API Key is missing. Please paste your personal Gemini API key into the code to enable Dasta to English translation on external hosting services like GitHub Pages.");
+            }
+            
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${apiKey}`;
+
+            // System prompt gives the model the Dasta rules to help it reconstruct the original English words.
+            const systemPrompt = "You are a specialized Dasta to English translator. The Dasta rules state that words are created by modifying English words: 2-letter words get 'ta' appended. 3-letter words lose the last letter and get 'ta' appended. 4+-letter words lose the last two letters and get 'ta' appended. Your task is to use this knowledge and your language understanding to reconstruct the most likely original English sentence from the Dasta input. Provide ONLY the translated English sentence as a single text block, with no explanations, titles, or formatting.";
+
+            const payload = {
+                contents: [{ parts: [{ text: query }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                tools: [{ "google_search": {} }], // Use search grounding to help find real words
+            };
+
+            try {
+                const response = await retryFetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                // Check for API errors in the response structure
+                if (result.error) {
+                    throw new Error(`API Error: ${result.error.message}`);
+                }
+
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) {
+                    throw new Error("Translation failed: API returned no text content.");
+                }
+
+                return text;
+
+            } catch (error) {
+                console.error('Gemini API Error:', error);
+                throw new Error(`Dasta to English translation failed due to an API error: ${error.message}`);
+            }
+        };
+
+        // --- Core Translation Logic (English -> Dasta) ---
+
+        /**
+         * Applies the user-defined Dasta transformation rules to a word.
+         */
+        const dastafyWord = (word) => {
+            const len = word.length;
+            
+            if (len === 2) {
+                return word + 'ta';
+            } else if (len === 3) {
+                // Rule: Remove last letter, append 'ta'
+                return word.substring(0, len - 1) + 'ta';
+            } else if (len >= 4) {
+                // Rule: Remove last two letters, append 'ta'
+                return word.substring(0, len - 2) + 'ta';
+            }
+            return word;
+        };
+
+        /**
+         * Performs English to Dasta transformation based on fixed rules.
+         */
+        const translateEnglishToDasta = (text) => {
+            if (!text) return '';
+            
+            // Regex to split words while keeping non-word characters (spaces, punctuation, etc.) separate
+            const parts = text.split(/(\b\s*|[^a-zA-Z0-9'’]+)/g);
+
+            return parts.map(part => {
+                if (!part || part.trim() === '' || !part.match(/[a-zA-Z0-9]/)) {
+                    return part;
+                }
+                
+                // Separate word stem from trailing punctuation
+                const match = part.match(/([a-zA-Z0-9'’]+)([^a-zA-Z0-9'’]*)$/);
+                
+                if (match) {
+                    const wordStem = match[1];
+                    const punctuation = match[2];
+                    const dastaWord = dastafyWord(wordStem);
+                    return dastaWord + punctuation;
+                }
+
+                return part;
+            }).join('');
+        };
+        
+        // --- UI Update Functions ---
+
+        const setLoadingState = (loading) => {
+            isProcessing = loading;
+            translateButton.disabled = loading || !inputTextArea.value.trim();
+            inputTextArea.disabled = loading;
+            swapButton.disabled = loading;
+
+            if (loading) {
+                sendIcon.classList.add('hidden');
+                processingSpinner.classList.remove('hidden'); 
+                translateText.textContent = 'Searching...';
+                outputContainer.innerHTML = `
+                    <div class="flex items-center justify-center h-full text-indigo-500">
+                        <div class="spinner rounded-full w-6 h-6 border-4 border-t-4 border-indigo-500 mr-2"></div>
+                        Translating (Intelligent Search)...
+                    </div>
+                `;
+            } else {
+                sendIcon.classList.remove('hidden');
+                processingSpinner.classList.add('hidden');
+                translateText.textContent = 'Translate';
+            }
+        };
+
+        const displayError = (message) => {
+            errorContainer.innerHTML = `
+                <div class="bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 px-4 py-3 rounded-md mb-6" role="alert">
+                    <p class="font-bold">Error:</p>
+                    <p class="text-sm">${message}</p>
+                </div>
+            `;
+        };
+
+        const clearError = () => {
+            errorContainer.innerHTML = '';
+        };
+
+        const updateUI = () => {
+            const sourceLang = direction === 'en_to_dasta' ? LANGUAGES.EN : LANGUAGES.DASTA;
+            const targetLang = direction === 'en_to_dasta' ? LANGUAGES.DASTA : LANGUAGES.EN;
+
+            directionLabel.innerHTML = `${sourceLang} <span class="font-semibold text-indigo-500">⇌</span> ${targetLang}`;
+            
+            inputLabel.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.02 18.02 0 014 16h3M7 11V7m4 2h2m-2 4h2m4 4h2m-6 3l-3-3m0 0l3-3m-3 3h4m1 0h3m-3 0V9m0 6h4"></path></svg>Source Language: <strong>${sourceLang}</strong>`;
+            outputLabel.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.02 18.02 0 014 16h3M7 11V7m4 2h2m-2 4h2m4 4h2m-6 3l-3-3m0 0l3-3m-3 3h4m1 0h3m-3 0V9m0 6h4"></path></svg>Target Language: <strong>${targetLang}</strong>`;
+
+            if (direction === 'en_to_dasta') {
+                inputTextArea.placeholder = 'Enter English text here to translate it into Dasta.';
+            } else {
+                // Placeholder for Dasta -> English shows that it uses intelligent search
+                inputTextArea.placeholder = 'Enter Dasta text here to translate it back into English (uses intelligent search).';
+            }
+        };
+
+        // --- Event Handlers ---
+
+        const toggleDirection = () => {
+            // Swap direction
+            direction = direction === 'en_to_dasta' ? 'dasta_to_en' : 'en_to_dasta';
+            
+            // Swap content
+            const temp = inputTextArea.value;
+            // Check if output is the default before swapping to prevent bad input
+            const outputContent = outputContainer.textContent.trim();
+            inputTextArea.value = (outputContent === 'Your translation will appear here.') ? '' : outputContent;
+            outputContainer.textContent = temp;
+
+            clearError();
+            updateUI();
+            
+            // Re-evaluate the translate button state after content swap
+            translateButton.disabled = isProcessing || !inputTextArea.value.trim();
+        };
+
+        const handleTranslate = async () => {
+            const inputText = inputTextArea.value.trim();
+            clearError();
+
+            if (!inputText) {
+                displayError("Please enter text to translate.");
+                return;
+            }
+
+            setLoadingState(true);
+            outputContainer.textContent = ''; // Clear output before processing
+
+            try {
+                if (direction === 'en_to_dasta') {
+                    // English -> Dasta (Local Rule-based)
+                    // Add a tiny delay to show the "Processing" state for UX
+                    await new Promise(resolve => setTimeout(resolve, 50)); 
+                    const result = translateEnglishToDasta(inputText);
+                    outputContainer.textContent = result;
+                } else {
+                    // Dasta -> English (Gemini API Call for intelligent reversal/search)
+                    const userQuery = `Convert the following Dasta sentence back to its original English: "${inputText}"`;
+                    const result = await callGeminiApi(userQuery);
+                    outputContainer.textContent = result;
+                }
+            } catch (error) {
+                console.error(error);
+                
+                let errorMessage = error.message;
+
+                // Handle the specific API key error check
+                if (errorMessage.includes("API Key is missing")) {
+                    errorMessage = "Authentication Error: The API key required for Dasta → English translation is missing. Please edit the code and insert your personal Gemini API key where indicated, especially when hosting on services like GitHub Pages.";
+                } else if (errorMessage.includes("403")) {
+                    errorMessage = "API Forbidden Error (403): The authentication provided (or lack thereof) is invalid for the API service. Double-check your API key configuration.";
+                }
+
+                // Display the error message in the output container
+                outputContainer.innerHTML = `
+                    <div class="text-red-600 dark:text-red-400 font-semibold flex items-start">
+                        <svg class="w-5 h-5 mr-2 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>${errorMessage}</p>
+                    </div>
+                `;
+                displayError("Translation failed. Please check the console for details.");
+
+            } finally {
+                setLoadingState(false);
+            }
+        };
+
+        // --- Initialization ---
+
+        window.onload = () => {
+            updateUI();
+
+            // Set up event listeners
+            swapButton.addEventListener('click', toggleDirection);
+            translateButton.addEventListener('click', handleTranslate);
+            
+            // Enable/disable translate button based on input
+            inputTextArea.addEventListener('input', () => {
+                translateButton.disabled = isProcessing || !inputTextArea.value.trim();
+                clearError();
+                // Reset output on input change if it was an error message
+                if (outputContainer.querySelector('.text-red-600') || outputContainer.querySelector('.text-yellow-600')) {
+                    outputContainer.textContent = 'Your translation will appear here.';
+                }
+            });
+
+            // Initial button state
+            translateButton.disabled = true;
+        };
+    </script>
+</body>
+</html>
